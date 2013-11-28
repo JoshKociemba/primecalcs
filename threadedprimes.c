@@ -16,7 +16,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-int num_threads, max_prime;
+unsigned int num_threads, max_prime;
 static char *prime_storage;
 clock_t start, stop;
 double total_time;
@@ -26,15 +26,14 @@ double total_time;
  * Prototypes
  **/
 
-void create_bitmap(char *prime_storage, int max_prime);
-void distribute_primes(char *prime_storage, int max_prime);
-void isnt_prime(char *prime_storage, int checked_prime);
-bool is_prime(char *prime_storage, int checked_prime);
+void create_bitmap(char *prime_storage, unsigned int max_prime);
+void distribute_primes(char *prime_storage, unsigned int max_prime);
+void isnt_prime(char *prime_storage, unsigned int checked_prime);
+bool is_prime(char *prime_storage, unsigned int checked_prime);
 void thread_setup(int num_threads);
 void *calc_primes(void *arg);
-int next_prime(int current_prime);
-int count_primes(char *prime_storage, int max_prime);
-void print_results(char *prime_storage, int max_prime);
+unsigned int count_primes(char *prime_storage, unsigned int max_prime);
+void print_results(char *prime_storage, unsigned int max_prime);
 void usage(void);
 
 int main(int argc, char **argv) {
@@ -79,12 +78,12 @@ int main(int argc, char **argv) {
 	total_time = (double)(stop - start) / (double)CLOCKS_PER_SEC;
 
 	print_results(prime_storage, max_prime);
-	//free(prime_storage);
+	//free(prime_storage)
 	return 0;
 }
 
-void create_bitmap(char *prime_storage, int max_prime) {
-	int i;
+void create_bitmap(char *prime_storage, unsigned int max_prime) {
+	unsigned int i;
 	
 	prime_storage[0] = 0b01010110;
 	
@@ -93,8 +92,8 @@ void create_bitmap(char *prime_storage, int max_prime) {
 	}
 }
 
-void distribute_primes(char *prime_storage, int max_prime) {
-	int i, j, shortened_max_prime;
+void distribute_primes(char *prime_storage, unsigned int max_prime) {
+	unsigned int i, j, shortened_max_prime;
 	
 	shortened_max_prime = sqrt(max_prime);
 	
@@ -108,9 +107,9 @@ void distribute_primes(char *prime_storage, int max_prime) {
 	}
 }
 
-void isnt_prime(char *prime_storage, int checked_prime) {
+void isnt_prime(char *prime_storage, unsigned int checked_prime) {
 	char current_prime;
-	int prime_size, prime_bitsize;
+	unsigned int prime_size, prime_bitsize;
 
 	prime_size = checked_prime / 8;
 	prime_bitsize = checked_prime % 8;
@@ -119,9 +118,9 @@ void isnt_prime(char *prime_storage, int checked_prime) {
 	prime_storage[current_prime] |= (1 << prime_bitsize);
 }
 
-bool is_prime(char *prime_storage, int checked_prime) {
+bool is_prime(char *prime_storage, unsigned int checked_prime) {
 	char current_prime;
-	int prime_size, prime_bitsize;
+	unsigned int prime_size, prime_bitsize;
 
 	prime_size = checked_prime / 8;
 	prime_bitsize = checked_prime % 8;
@@ -150,43 +149,24 @@ void thread_setup(int num_threads) {
 }
 
 void *calc_primes(void *arg) {
-	int i = 1, j, min, max;
-	long id;
-
-	id = (long)arg;
+	unsigned int i, j;
+	unsigned long id;
 	
-	min = id * (max_prime / num_threads) + 1;
-
-	if (id == num_threads - 1) {
-		max = max_prime;
-	} else {
-		max = min + ((max_prime / num_threads) - 1);
-	}
-
-	while((i = next_prime(i)) != 0) {
-		for(j = (min / i < 3) ? 3 : (min / i); (i * j) <= max; j++) {
-			isnt_prime(prime_storage, i * j);
+	for (i = 2; i <= sqrt(max_prime); i++) {
+		if(is_prime(prime_storage, i)) {
+			for(j = i; j <= max_prime; j+= i) {
+				isnt_prime(prime_storage, j);
+			}
 		}
 	}
 
 	return (void *)0;
 }
 
-int next_prime(int current_prime) {
-	int i;
+unsigned int count_primes(char *prime_storage, unsigned int max_prime) {
+	unsigned int i, num_primes = 0;
 
-	for(i = current_prime + 1; i <= sqrt(max_prime); i++) {
-		if (is_prime(prime_storage, i)) {
-			return i;
-		}
-	}
-	return 0;
-}
-
-int count_primes(char *prime_storage, int max_prime) {
-	int i, num_primes = 0;
-
-	for(i = 3; i < max_prime + 1; i += 2) {
+	for(i = 1; i <= max_prime; i += 2) {
 		if (is_prime(prime_storage, i)) {
 			num_primes++;
 		}
@@ -195,7 +175,7 @@ int count_primes(char *prime_storage, int max_prime) {
 	return num_primes;
 }
 
-void print_results(char *prime_storage, int max_prime) {
+void print_results(char *prime_storage, unsigned int max_prime) {
 	printf("It took %f seconds to calculate %d primes between 1 and %d!\n", total_time, 
 		count_primes(prime_storage, max_prime), max_prime);
 }
